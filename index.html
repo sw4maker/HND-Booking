@@ -5,257 +5,1202 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>초등 특별실 예약 시스템 - Smart Hub</title>
     <meta name="description" content="초등학교 교사들을 위한 현대적이고 편리한 특별실 실시간 예약 및 관리 시스템">
-    <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts: Outfit & Noto Sans KR -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Supabase JS SDK (Classic CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script>
-        // [설정] 실시간 온라인 공유를 사용하려면 Supabase 프로젝트를 생성한 후 아래에 값을 채워주세요.
-        // 값이 비어 있으면 브라우저의 localStorage를 사용하는 로컬 모드로 즉시 작동합니다.
-        window.VITE_SUPABASE_URL = "";
-        window.VITE_SUPABASE_ANON_KEY = "";
-    </script>
+
+    <style>
+    :root {
+        --bg-color: #080c14;
+        --card-bg: rgba(15, 23, 42, 0.45);
+        --glass-bg: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --glass-border-focus: rgba(255, 255, 255, 0.2);
+        --gradient-blue: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+        --gradient-purple: linear-gradient(135deg, #f355da 0%, #7006ff 100%);
+        --gradient-teal: linear-gradient(135deg, #11e8b7 0%, #0099f7 100%);
+        --gradient-orange: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+        --primary: #00c6ff;
+        --primary-glow: rgba(0, 198, 255, 0.35);
+        --accent: #f355da;
+        --accent-glow: rgba(243, 85, 218, 0.3);
+        --danger: #ff4757;
+        --danger-glow: rgba(255, 71, 87, 0.25);
+        --success: #2ed573;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-dim: #54657a;
+        --font-outfit: 'Outfit', 'Noto Sans KR', sans-serif;
+        --radius: 20px;
+        --radius-sm: 12px;
+        --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+    body {
+        background-color: var(--bg-color);
+        background-image:
+            radial-gradient(at 8% 10%, rgba(0,198,255,0.08) 0px, transparent 40%),
+            radial-gradient(at 92% 90%, rgba(243,85,218,0.08) 0px, transparent 40%),
+            radial-gradient(at 50% 50%, rgba(17,232,183,0.04) 0px, transparent 50%);
+        background-attachment: fixed;
+        color: var(--text-main);
+        font-family: var(--font-outfit);
+        min-height: 100vh;
+        overflow-x: hidden;
+        line-height: 1.5;
+    }
+
+    #app { max-width: 960px; margin: 0 auto; padding: 24px; padding-bottom: 80px; }
+
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .glass {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px) saturate(160%);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 10px 30px 0 rgba(0,0,0,0.3);
+    }
+
+    header {
+        border-radius: var(--radius);
+        padding: 16px 24px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+    header::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1.5px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+    .header-content { display: flex; justify-content: space-between; align-items: center; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon-wrapper {
+        background: linear-gradient(135deg, rgba(0,198,255,0.12), rgba(243,85,218,0.12));
+        border: 1px solid rgba(255,255,255,0.08);
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon { width: 22px; height: 22px; color: var(--primary); filter: drop-shadow(0 0 5px var(--primary-glow)); }
+    .logo-text { display: flex; flex-direction: column; }
+    .title-sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); font-weight: 600; }
+    .title-main {
+        font-size: 1.15rem; font-weight: 700;
+        background: linear-gradient(90deg, var(--text-main), #cbd5e1);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .current-info { display: flex; align-items: center; gap: 12px; }
+    .live-indicator {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.75rem; color: var(--success);
+        background: rgba(46,213,115,0.08);
+        padding: 5px 12px; border-radius: 50px;
+        border: 1px solid rgba(46,213,115,0.15); font-weight: 600;
+    }
+    .pulse-dot { width: 6px; height: 6px; background-color: var(--success); border-radius: 50%; animation: pulse 1.8s infinite; }
+    @keyframes pulse {
+        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(46,213,115,0.6); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(46,213,115,0); }
+        100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(46,213,115,0); }
+    }
+    .btn-icon {
+        background: transparent; border: 1px solid var(--glass-border);
+        color: var(--text-muted); width: 38px; height: 38px;
+        border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        transition: var(--transition);
+    }
+    .btn-icon i { width: 18px; height: 18px; }
+    .btn-icon:hover { color: var(--primary); border-color: var(--primary); }
+
+    .room-tabs {
+        display: flex; gap: 10px; overflow-x: auto;
+        padding: 4px; margin-bottom: 24px; scrollbar-width: none;
+    }
+    .room-tabs::-webkit-scrollbar { display: none; }
+    .room-tab-btn {
+        background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
+        border-radius: 30px; padding: 10px 20px;
+        color: var(--text-muted); font-family: inherit; font-weight: 600; font-size: 0.9rem;
+        cursor: pointer; display: flex; align-items: center; gap: 8px;
+        white-space: nowrap; transition: var(--transition);
+    }
+    .room-tab-btn i { width: 16px; height: 16px; transition: var(--transition); }
+    .room-tab-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-main); border-color: var(--glass-border-focus); }
+    .room-tab-btn.active {
+        background: var(--active-bg, var(--gradient-blue));
+        color: white; border-color: transparent;
+        box-shadow: 0 6px 20px var(--active-glow, var(--primary-glow));
+        transform: translateY(-1px);
+    }
+    .room-tab-btn.active i { color: white; transform: scale(1.05); }
+
+    .control-panel {
+        border-radius: var(--radius); padding: 16px 24px; margin-bottom: 24px;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    }
+    .control-left { display: flex; align-items: center; gap: 8px; }
+    .btn-nav {
+        background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+        color: var(--text-muted); width: 38px; height: 38px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition);
+    }
+    .btn-nav:hover { background: rgba(255,255,255,0.08); color: var(--text-main); border-color: var(--glass-border-focus); }
+    .btn-nav i { width: 18px; height: 18px; }
+    .btn-today-text {
+        background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+        color: var(--text-main); font-family: inherit; font-weight: 600; font-size: 0.85rem;
+        padding: 0 16px; height: 38px; border-radius: 10px; cursor: pointer; transition: var(--transition);
+    }
+    .btn-today-text:hover { background: rgba(255,255,255,0.08); border-color: var(--glass-border-focus); }
+    .date-range-title { font-size: 1.15rem; font-weight: 700; margin-left: 8px; letter-spacing: -0.5px; }
+    .control-right { display: flex; align-items: center; }
+    .view-toggle-group {
+        background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border);
+        padding: 3px; border-radius: 10px; display: flex;
+    }
+    .btn-toggle {
+        background: transparent; border: none; color: var(--text-muted);
+        padding: 8px 18px; border-radius: 8px; font-family: inherit;
+        font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: var(--transition);
+    }
+    .btn-toggle:hover { color: var(--text-main); }
+    .btn-toggle.active { background: rgba(255,255,255,0.08); color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+
+    .view-panel { animation: fadeIn 0.4s ease-out forwards; }
+    .hidden { display: none !important; }
+
+    .week-timetable-wrapper { border-radius: var(--radius); overflow: hidden; }
+    .week-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .week-table th, .week-table td {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-right: 1px solid rgba(255,255,255,0.05);
+        text-align: center; position: relative;
+    }
+    .week-table th:last-child, .week-table td:last-child { border-right: none; }
+    .week-table tr:last-child td { border-bottom: none; }
+    .week-table th {
+        background: rgba(0,0,0,0.2); padding: 14px 10px;
+        font-weight: 700; font-size: 0.9rem; color: var(--text-muted);
+    }
+    .week-table th .date-lbl { font-size: 0.75rem; font-weight: 500; color: var(--text-dim); margin-left: 4px; }
+    .week-table td.period-col { background: rgba(0,0,0,0.1); font-weight: 800; color: var(--primary); width: 70px; padding: 24px 0; }
+    .week-table td.period-col span { display: block; font-size: 1.25rem; }
+    .week-table td.period-col .period-unit { font-size: 0.65rem; font-weight: 600; color: var(--text-dim); margin-top: -3px; text-transform: uppercase; }
+
+    .week-table td.cell-available { cursor: pointer; transition: var(--transition); height: 90px; padding: 10px; vertical-align: middle; }
+    .week-table td.cell-available .cell-content {
+        width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        border: 1px dashed rgba(255,255,255,0.05); border-radius: var(--radius-sm);
+        color: var(--text-dim); font-size: 0.75rem; font-weight: 600; transition: var(--transition);
+    }
+    .week-table td.cell-available:hover { background: rgba(0,198,255,0.02); }
+    .week-table td.cell-available:hover .cell-content {
+        border-color: var(--primary); background: rgba(0,198,255,0.05); color: var(--primary); transform: scale(1.02);
+    }
+    .week-table td.cell-booked { cursor: pointer; transition: var(--transition); height: 90px; padding: 6px; vertical-align: middle; }
+    .week-table td.cell-booked .cell-content {
+        width: 100%; height: 100%;
+        background: linear-gradient(135deg, rgba(243,85,218,0.12) 0%, rgba(112,6,255,0.12) 100%);
+        border: 1px solid rgba(243,85,218,0.2); border-radius: var(--radius-sm);
+        padding: 10px 8px; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; gap: 3px; transition: var(--transition); overflow: hidden;
+    }
+    .week-table td.cell-booked:hover .cell-content {
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, rgba(243,85,218,0.22) 0%, rgba(112,6,255,0.22) 100%);
+        border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-glow);
+    }
+    .week-table td.cell-booked .booked-user { font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 4px; }
+    .week-table td.cell-booked .booked-user i { width: 12px; height: 12px; color: var(--accent); }
+    .week-table td.cell-booked .booked-purpose { font-size: 0.72rem; color: var(--text-muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .month-calendar-wrapper { border-radius: var(--radius); padding: 16px; }
+    .calendar-days-header {
+        display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+        font-weight: 700; font-size: 0.8rem; color: var(--text-muted);
+        padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .calendar-days-header div:first-child { color: var(--danger); }
+    .calendar-days-header div:last-child { color: var(--primary); }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; padding-top: 8px; }
+    .calendar-cell {
+        aspect-ratio: 1 / 1.15; background: rgba(255,255,255,0.01);
+        border: 1px solid rgba(255,255,255,0.03); border-radius: var(--radius-sm);
+        padding: 8px; display: flex; flex-direction: column; gap: 4px;
+        cursor: pointer; transition: var(--transition); position: relative; min-height: 90px;
+    }
+    .calendar-cell:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+    .calendar-cell.other-month { opacity: 0.25; }
+    .calendar-cell.today { background: rgba(0,198,255,0.03); border-color: rgba(0,198,255,0.25); box-shadow: inset 0 0 10px rgba(0,198,255,0.05); }
+    .calendar-cell.today .day-number { color: var(--primary); font-weight: 800; }
+    .calendar-cell .day-number { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+    .calendar-cell:nth-child(7n+1) .day-number { color: var(--danger); }
+    .calendar-cell:nth-child(7n) .day-number { color: var(--primary); }
+    .calendar-reservations { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; flex: 1; scrollbar-width: none; }
+    .calendar-reservations::-webkit-scrollbar { display: none; }
+    .cal-booking-badge {
+        font-size: 0.65rem; font-weight: 700; padding: 2px 5px; border-radius: 4px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        background: rgba(243,85,218,0.15); border: 1px solid rgba(243,85,218,0.25);
+        color: #fca5a5; text-align: left;
+    }
+    .cal-booking-badge:hover { filter: brightness(1.1); }
+
+    .admin-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; }
+    @media (max-width: 768px) { .admin-grid { grid-template-columns: 1fr; } }
+    .admin-card { border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .admin-card h3 { font-size: 1.1rem; font-weight: 700; border-left: 3px solid var(--primary); padding-left: 8px; }
+    .admin-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .form-group label i { width: 12px; height: 12px; vertical-align: middle; margin-right: 4px; }
+    .form-group input {
+        background: rgba(0,0,0,0.25); border: 1px solid var(--glass-border);
+        color: var(--text-main); padding: 12px 14px; border-radius: var(--radius-sm);
+        font-family: inherit; font-size: 0.9rem; outline: none; transition: var(--transition);
+    }
+    .form-group input:focus { border-color: var(--primary); }
+    .icon-selector { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .selector-icon-item {
+        aspect-ratio: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
+        border-radius: 8px; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: var(--transition);
+    }
+    .selector-icon-item i { width: 18px; height: 18px; color: var(--text-muted); }
+    .selector-icon-item:hover, .selector-icon-item.active { background: rgba(255,255,255,0.06); border-color: var(--primary); }
+    .selector-icon-item.active i { color: var(--primary); }
+    .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .selector-color-item { height: 32px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: var(--transition); position: relative; }
+    .selector-color-item::before { content: ''; position: absolute; inset: 2px; background: var(--color-val); border-radius: 6px; }
+    .selector-color-item.active { border-color: white; }
+    .admin-list-wrapper { max-height: 350px; overflow-y: auto; }
+    .admin-room-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .admin-room-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 16px; background: rgba(255,255,255,0.02);
+        border: 1px solid var(--glass-border); border-radius: var(--radius-sm);
+    }
+    .btn-delete-room { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; }
+    .btn-delete-room:hover { background: rgba(255,71,87,0.1); }
+    .btn-delete-room i { width: 14px; height: 14px; }
+    .btn-back {
+        background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-muted);
+        padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px;
+        font-weight: 600; font-size: 0.8rem; transition: var(--transition);
+    }
+    .btn-back:hover { color: var(--text-main); transform: translateX(-2px); }
+    .section-header-back { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .btn-primary {
+        background: var(--gradient-blue); border: none; color: white;
+        padding: 12px 20px; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.9rem;
+        cursor: pointer; box-shadow: 0 4px 15px var(--primary-glow); transition: var(--transition);
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--primary-glow); }
+    .btn-secondary {
+        background: var(--glass-bg); border: 1px solid var(--glass-border);
+        color: var(--text-muted); padding: 12px 20px; border-radius: var(--radius-sm);
+        cursor: pointer; font-weight: 600; transition: var(--transition);
+    }
+    .btn-secondary:hover { color: var(--text-main); }
+    .btn-danger {
+        background: rgba(255,71,87,0.08); border: 1px solid rgba(255,71,87,0.15);
+        color: #ff6b81; padding: 12px 20px; border-radius: var(--radius-sm);
+        cursor: pointer; font-weight: 700; display: inline-flex; align-items: center;
+        justify-content: center; gap: 6px; transition: var(--transition);
+    }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-block { width: 100%; }
+
+    .modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(4,6,12,0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 1000; padding: 20px; opacity: 0; pointer-events: none;
+        transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal:not(.hidden) { opacity: 1; pointer-events: auto; }
+    .modal-content {
+        width: 100%; max-width: 420px; border-radius: var(--radius); padding: 24px;
+        transform: translateY(15px) scale(0.97);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal:not(.hidden) .modal-content { transform: translateY(0) scale(1); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h3 { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .btn-close-modal {
+        background: transparent; border: none; color: var(--text-muted);
+        cursor: pointer; width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .btn-close-modal:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+    .btn-close-modal i { width: 16px; height: 16px; }
+    .modal-body { display: flex; flex-direction: column; gap: 16px; }
+    .booking-summary {
+        background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border);
+        border-radius: var(--radius-sm); padding: 12px 16px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .summary-item { display: flex; justify-content: space-between; font-size: 0.8rem; }
+    .summary-item .label { color: var(--text-muted); }
+    .summary-item .value { font-weight: 700; color: var(--text-main); }
+    .text-primary { color: var(--primary) !important; }
+    .text-accent { color: var(--accent) !important; }
+    .detail-card { display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 16px; }
+    .detail-row { display: flex; gap: 12px; align-items: flex-start; }
+    .detail-row i { width: 16px; height: 16px; color: var(--primary); margin-top: 2px; }
+    .detail-row div { display: flex; flex-direction: column; gap: 1px; }
+    .detail-row .label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    .detail-row .value { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .modal-actions button { flex: 1; }
+
+    .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 2000; max-width: 340px; }
+    .toast {
+        background: rgba(15,23,42,0.9); backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border); border-radius: var(--radius-sm);
+        padding: 14px 18px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        display: flex; align-items: center; gap: 10px;
+        transform: translateY(15px); opacity: 0;
+        animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        transition: var(--transition);
+    }
+    @keyframes toastIn { to { transform: translateY(0); opacity: 1; } }
+    .toast.toast-exit { transform: translateY(-15px); opacity: 0; }
+    .toast i { width: 18px; height: 18px; flex-shrink: 0; }
+    .toast.success i { color: var(--success); }
+    .toast.error i { color: var(--danger); }
+    .toast.info i { color: var(--primary); }
+    .toast-message { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+
+    .section-header-back h2 { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .title-icon { width: 20px; height: 20px; color: var(--primary); }
+
+    @media (max-width: 768px) {
+        #app { padding: 16px; }
+        header { padding: 12px 16px; margin-bottom: 16px; }
+        .header-content { flex-direction: column; align-items: flex-start; gap: 12px; }
+        .current-info { width: 100%; justify-content: space-between; }
+        .control-panel { padding: 14px 16px; flex-direction: column; align-items: stretch; }
+        .control-left { justify-content: space-between; }
+        .control-right { justify-content: center; }
+        .view-toggle-group { width: 100%; }
+        .btn-toggle { flex: 1; text-align: center; }
+        .week-timetable-wrapper { overflow-x: auto; }
+        .week-table { min-width: 600px; }
+        .calendar-cell { aspect-ratio: 1; min-height: 70px; padding: 4px; }
+        .calendar-cell .day-number { font-size: 0.75rem; }
+        .cal-booking-badge { font-size: 0.6rem; padding: 1px 3px; }
+    }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Header -->
-        <header class="glass">
-            <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon-wrapper">
-                        <i data-lucide="school" class="logo-icon"></i>
-                    </div>
-                    <div class="logo-text">
-                        <span class="title-sub">초등학교</span>
-                        <span class="title-main">특별실 예약 시스템</span>
-                    </div>
+<div id="app">
+    <header class="glass">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon-wrapper">
+                    <i data-lucide="school" class="logo-icon"></i>
                 </div>
-                <div class="current-info">
-                    <div class="live-indicator">
-                        <span class="pulse-dot"></span>실시간 동기화 중
-                    </div>
-                    <button id="admin-toggle" class="btn-icon ripple" title="관리자 모드">
-                        <i data-lucide="settings"></i>
-                    </button>
+                <div class="logo-text">
+                    <span class="title-sub">초등학교</span>
+                    <span class="title-main">특별실 예약 시스템</span>
                 </div>
             </div>
-        </header>
-
-        <main>
-            <!-- Room Tabs Bar (Dynamic Horizontal Navigation) -->
-            <section id="tabs-section">
-                <div id="room-tabs" class="room-tabs">
-                    <!-- Tabs will be injected here via JS -->
+            <div class="current-info">
+                <div class="live-indicator">
+                    <span class="pulse-dot"></span>Firebase 실시간 동기화
                 </div>
-            </section>
+                <button id="admin-toggle" class="btn-icon" title="관리자 모드">
+                    <i data-lucide="settings"></i>
+                </button>
+            </div>
+        </div>
+    </header>
 
-            <!-- Dashboard Content Section -->
-            <section id="dashboard-section" class="fade-in">
-                <!-- View Control Bar -->
-                <div class="control-panel glass">
-                    <div class="control-left">
-                        <button id="btn-prev" class="btn-nav" title="이전"><i data-lucide="chevron-left"></i></button>
-                        <button id="btn-today" class="btn-today-text">오늘</button>
-                        <button id="btn-next" class="btn-nav" title="다음"><i data-lucide="chevron-right"></i></button>
-                        <h3 id="current-range-display" class="date-range-title">로딩 중...</h3>
-                    </div>
-                    <div class="control-right">
-                        <div class="view-toggle-group">
-                            <button id="toggle-week" class="btn-toggle active">주별</button>
-                            <button id="toggle-month" class="btn-toggle">월별</button>
-                        </div>
-                    </div>
+    <main>
+        <section id="tabs-section">
+            <div id="room-tabs" class="room-tabs"></div>
+        </section>
+
+        <section id="dashboard-section" class="fade-in">
+            <div class="control-panel glass">
+                <div class="control-left">
+                    <button id="btn-prev" class="btn-nav" title="이전"><i data-lucide="chevron-left"></i></button>
+                    <button id="btn-today" class="btn-today-text">오늘</button>
+                    <button id="btn-next" class="btn-nav" title="다음"><i data-lucide="chevron-right"></i></button>
+                    <h3 id="current-range-display" class="date-range-title">로딩 중...</h3>
                 </div>
-
-                <!-- Week View Panel -->
-                <div id="week-view" class="view-panel">
-                    <div class="week-timetable-wrapper glass">
-                        <table class="week-table">
-                            <thead>
-                                <tr id="week-table-header">
-                                    <th>교시</th>
-                                    <th>월 <span class="date-lbl"></span></th>
-                                    <th>화 <span class="date-lbl"></span></th>
-                                    <th>수 <span class="date-lbl"></span></th>
-                                    <th>목 <span class="date-lbl"></span></th>
-                                    <th>금 <span class="date-lbl"></span></th>
-                                </tr>
-                            </thead>
-                            <tbody id="week-table-body">
-                                <!-- 1~6 periods rows injected here -->
-                            </tbody>
-                        </table>
+                <div class="control-right">
+                    <div class="view-toggle-group">
+                        <button id="toggle-week" class="btn-toggle active">주별</button>
+                        <button id="toggle-month" class="btn-toggle">월별</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Month View Panel -->
-                <div id="month-view" class="view-panel hidden">
-                    <div class="month-calendar-wrapper glass">
-                        <div class="calendar-days-header">
-                            <div>일</div>
-                            <div>월</div>
-                            <div>화</div>
-                            <div>수</div>
-                            <div>목</div>
-                            <div>금</div>
-                            <div>토</div>
-                        </div>
-                        <div id="month-calendar-grid" class="calendar-grid">
-                            <!-- Calendar dates grid cells injected here -->
-                        </div>
-                    </div>
+            <div id="week-view" class="view-panel">
+                <div class="week-timetable-wrapper glass">
+                    <table class="week-table">
+                        <thead>
+                            <tr id="week-table-header">
+                                <th>교시</th>
+                                <th>월 <span class="date-lbl"></span></th>
+                                <th>화 <span class="date-lbl"></span></th>
+                                <th>수 <span class="date-lbl"></span></th>
+                                <th>목 <span class="date-lbl"></span></th>
+                                <th>금 <span class="date-lbl"></span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="week-table-body"></tbody>
+                    </table>
                 </div>
-            </section>
+            </div>
 
-            <!-- Admin Panel Area -->
-            <section id="admin-panel" class="hidden fade-in">
-                <div class="section-header-back">
-                    <button id="close-admin" class="btn-back">
-                        <i data-lucide="arrow-left"></i>
-                        <span>메인 화면으로</span>
-                    </button>
-                    <h2><i data-lucide="shield-check" class="title-icon"></i>특별실 관리자 설정</h2>
-                </div>
-                
-                <div class="admin-grid">
-                    <!-- Add Room Card -->
-                    <div class="admin-card add-card glass">
-                        <h3>특별실 신규 등록</h3>
-                        <form id="add-room-form" class="admin-form">
-                            <div class="form-group">
-                                <label for="new-room-name">특별실 명칭</label>
-                                <input type="text" id="new-room-name" required placeholder="예: 창의미술실, AI코딩실">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>대표 아이콘 선택</label>
-                                <div class="icon-selector" id="icon-selector">
-                                    <!-- Icons injected via JS -->
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>테마 컬러 그라데이션</label>
-                                <div class="color-selector" id="color-selector">
-                                    <!-- Colors injected via JS -->
-                                </div>
-                            </div>
-                            
-                            <button type="submit" id="add-room-btn" class="btn-primary btn-block">
-                                <i data-lucide="plus"></i> 특별실 등록하기
-                            </button>
-                        </form>
+            <div id="month-view" class="view-panel hidden">
+                <div class="month-calendar-wrapper glass">
+                    <div class="calendar-days-header">
+                        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
                     </div>
-
-                    <!-- Room List Card -->
-                    <div class="admin-card list-card glass">
-                        <h3>등록된 특별실 목록</h3>
-                        <div class="admin-list-wrapper">
-                            <ul id="admin-room-list" class="admin-room-list">
-                                <!-- Admin room list for deletion -->
-                            </ul>
-                        </div>
-                    </div>
+                    <div id="month-calendar-grid" class="calendar-grid"></div>
                 </div>
-            </section>
-        </main>
+            </div>
+        </section>
 
-        <!-- Booking Modal -->
-        <div id="booking-modal" class="modal hidden">
-            <div class="modal-content glass active">
-                <div class="modal-header">
-                    <h3><i data-lucide="plus-circle" class="modal-icon text-primary"></i>특별실 예약 신청</h3>
-                    <button type="button" class="btn-close-modal" id="close-modal-x"><i data-lucide="x"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="booking-summary">
-                        <div class="summary-item">
-                            <span class="label">예약 실습실</span>
-                            <span class="value" id="modal-room-name">-</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="label">날짜 / 교시</span>
-                            <span class="value text-accent" id="modal-subtitle">-</span>
-                        </div>
-                    </div>
-                    <form id="booking-form">
+        <section id="admin-panel" class="hidden fade-in">
+            <div class="section-header-back">
+                <button id="close-admin" class="btn-back">
+                    <i data-lucide="arrow-left"></i>
+                    <span>메인 화면으로</span>
+                </button>
+                <h2><i data-lucide="shield-check" class="title-icon"></i>특별실 관리자 설정</h2>
+            </div>
+            <div class="admin-grid">
+                <div class="admin-card add-card glass">
+                    <h3>특별실 신규 등록</h3>
+                    <form id="add-room-form" class="admin-form">
                         <div class="form-group">
-                            <label for="user-name"><i data-lucide="user"></i>예약자 성함</label>
-                            <input type="text" id="user-name" required placeholder="교사 성함을 입력해 주세요. (예: 홍길동)">
+                            <label for="new-room-name">특별실 명칭</label>
+                            <input type="text" id="new-room-name" required placeholder="예: 창의미술실, AI코딩실">
                         </div>
                         <div class="form-group">
-                            <label for="purpose"><i data-lucide="message-square"></i>사용 목적 (수업 명)</label>
-                            <input type="text" id="purpose" required placeholder="예: 6학년 1반 실습 수업">
+                            <label>대표 아이콘 선택</label>
+                            <div class="icon-selector" id="icon-selector"></div>
                         </div>
-                        <div class="modal-actions">
-                            <button type="button" id="close-modal" class="btn-secondary">취소</button>
-                            <button type="submit" class="btn-primary">예약 완료</button>
+                        <div class="form-group">
+                            <label>테마 컬러 그라데이션</label>
+                            <div class="color-selector" id="color-selector"></div>
                         </div>
+                        <button type="submit" class="btn-primary btn-block">
+                            <i data-lucide="plus"></i> 특별실 등록하기
+                        </button>
                     </form>
                 </div>
-            </div>
-        </div>
-
-        <!-- Detail Modal (for cancellation) -->
-        <div id="detail-modal" class="modal hidden">
-            <div class="modal-content glass active">
-                <div class="modal-header">
-                    <h3><i data-lucide="info" class="modal-icon text-accent"></i>예약 상세 정보</h3>
-                    <button type="button" class="btn-close-modal" id="close-detail-x"><i data-lucide="x"></i></button>
+                <div class="admin-card list-card glass">
+                    <h3>등록된 특별실 목록</h3>
+                    <div class="admin-list-wrapper">
+                        <ul id="admin-room-list" class="admin-room-list"></ul>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <div class="detail-card">
-                        <div class="detail-row">
-                            <i data-lucide="map-pin"></i>
-                            <div>
-                                <span class="label">예약 장소</span>
-                                <span class="value" id="detail-room">-</span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <i data-lucide="clock"></i>
-                            <div>
-                                <span class="label">사용 시간</span>
-                                <span class="value text-accent" id="detail-time">-</span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <i data-lucide="user"></i>
-                            <div>
-                                <span class="label">예약 교사</span>
-                                <span class="value" id="detail-user">-</span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <i data-lucide="text"></i>
-                            <div>
-                                <span class="label">사용 목적</span>
-                                <span class="value" id="detail-purpose">-</span>
-                            </div>
-                        </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Booking Modal -->
+    <div id="booking-modal" class="modal hidden">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3><i data-lucide="plus-circle" class="modal-icon text-primary"></i>특별실 예약 신청</h3>
+                <button type="button" class="btn-close-modal" id="close-modal-x"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="booking-summary">
+                    <div class="summary-item">
+                        <span class="label">예약 실습실</span>
+                        <span class="value" id="modal-room-name">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">날짜 / 교시</span>
+                        <span class="value text-accent" id="modal-subtitle">-</span>
+                    </div>
+                </div>
+                <form id="booking-form">
+                    <div class="form-group">
+                        <label for="user-name"><i data-lucide="user"></i>예약자 성함</label>
+                        <input type="text" id="user-name" required placeholder="교사 성함을 입력해 주세요. (예: 홍길동)">
+                    </div>
+                    <div class="form-group">
+                        <label for="purpose"><i data-lucide="message-square"></i>사용 목적 (수업 명)</label>
+                        <input type="text" id="purpose" required placeholder="예: 6학년 1반 실습 수업">
                     </div>
                     <div class="modal-actions">
-                        <button type="button" id="close-detail" class="btn-secondary">닫기</button>
-                        <button type="button" id="cancel-booking-btn" class="btn-danger">
-                            <i data-lucide="trash-2"></i> 예약 취소
-                        </button>
+                        <button type="button" id="close-modal" class="btn-secondary">취소</button>
+                        <button type="submit" class="btn-primary">예약 완료</button>
                     </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal hidden">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3><i data-lucide="info" class="modal-icon text-accent"></i>예약 상세 정보</h3>
+                <button type="button" class="btn-close-modal" id="close-detail-x"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-card">
+                    <div class="detail-row">
+                        <i data-lucide="map-pin"></i>
+                        <div><span class="label">예약 장소</span><span class="value" id="detail-room">-</span></div>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="clock"></i>
+                        <div><span class="label">사용 시간</span><span class="value text-accent" id="detail-time">-</span></div>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="user"></i>
+                        <div><span class="label">예약 교사</span><span class="value" id="detail-user">-</span></div>
+                    </div>
+                    <div class="detail-row">
+                        <i data-lucide="text"></i>
+                        <div><span class="label">사용 목적</span><span class="value" id="detail-purpose">-</span></div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-detail" class="btn-secondary">닫기</button>
+                    <button type="button" id="cancel-booking-btn" class="btn-danger">
+                        <i data-lucide="trash-2"></i> 예약 취소
+                    </button>
                 </div>
             </div>
         </div>
-
-        <!-- Toast Notification Container -->
-        <div id="toast-container" class="toast-container"></div>
     </div>
 
-    <!-- Loaded as standard script with defer to support double-click (file:///) execution -->
-    <script src="app.js" defer></script>
+    <div id="toast-container" class="toast-container"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+import {
+    getFirestore, collection, doc, getDocs, addDoc, deleteDoc,
+    query, orderBy, where, onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+// ──────────────────────────────────────────────
+// Firebase 설정
+// ──────────────────────────────────────────────
+const firebaseConfig = {
+    apiKey: "AIzaSyAHtqdzWnhKgczYvelSgFPorSK5TNpRn_8",
+    authDomain: "hnd-booking.firebaseapp.com",
+    projectId: "hnd-booking",
+    storageBucket: "hnd-booking.firebasestorage.app",
+    messagingSenderId: "1013859078962",
+    appId: "1:1013859078962:web:5885697bfbcd24440e3d2b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ──────────────────────────────────────────────
+// 상수 설정
+// ──────────────────────────────────────────────
+const ADMIN_PASSWORD = 'admin'; // 필요시 변경
+
+const PRESET_COLORS = [
+    { name: 'Blue',   color: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)', glow: 'rgba(0,198,255,0.35)' },
+    { name: 'Teal',   color: 'linear-gradient(135deg, #11e8b7 0%, #0099f7 100%)', glow: 'rgba(17,232,183,0.3)' },
+    { name: 'Purple', color: 'linear-gradient(135deg, #f355da 0%, #7006ff 100%)', glow: 'rgba(243,85,218,0.3)' },
+    { name: 'Orange', color: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)', glow: 'rgba(255,94,98,0.3)' }
+];
+
+const PRESET_ICONS = [
+    'beaker','monitor','palette','music',
+    'book-open','trophy','cpu','award',
+    'clapperboard','shapes','map','globe'
+];
+
+// ──────────────────────────────────────────────
+// 앱 상태
+// ──────────────────────────────────────────────
+let rooms = [];
+let bookings = {}; // key: `{roomId}_{YYYY-MM-DD}`, value: { [period]: { id, userName, purpose } }
+let selectedRoom = null;
+let viewMode = 'week';
+let referenceDate = new Date();
+let activePeriod = null;
+let activeTargetDate = null;
+let selectedAdminIcon = PRESET_ICONS[0];
+let selectedAdminColor = PRESET_COLORS[0];
+
+// ──────────────────────────────────────────────
+// DOM 참조
+// ──────────────────────────────────────────────
+const roomTabs            = document.getElementById('room-tabs');
+const currentRangeDisplay = document.getElementById('current-range-display');
+const btnPrev             = document.getElementById('btn-prev');
+const btnToday            = document.getElementById('btn-today');
+const btnNext             = document.getElementById('btn-next');
+const toggleWeek          = document.getElementById('toggle-week');
+const toggleMonth         = document.getElementById('toggle-month');
+const weekView            = document.getElementById('week-view');
+const monthView           = document.getElementById('month-view');
+const weekTableBody       = document.getElementById('week-table-body');
+const monthCalendarGrid   = document.getElementById('month-calendar-grid');
+const adminToggle         = document.getElementById('admin-toggle');
+const adminPanel          = document.getElementById('admin-panel');
+const closeAdmin          = document.getElementById('close-admin');
+const adminRoomList       = document.getElementById('admin-room-list');
+const addRoomForm         = document.getElementById('add-room-form');
+const newRoomNameInput    = document.getElementById('new-room-name');
+const iconSelector        = document.getElementById('icon-selector');
+const colorSelector       = document.getElementById('color-selector');
+const bookingModal        = document.getElementById('booking-modal');
+const bookingForm         = document.getElementById('booking-form');
+const detailModal         = document.getElementById('detail-modal');
+const cancelBookingBtn    = document.getElementById('cancel-booking-btn');
+
+// ──────────────────────────────────────────────
+// 초기화
+// ──────────────────────────────────────────────
+async function init() {
+    renderAdminFormSelectors();
+    await loadData();
+    setupRealtimeListeners();
+    setupEventListeners();
+    lucide.createIcons();
+    showToast('Firebase 실시간 데이터베이스에 연결되었습니다.', 'info');
+}
+
+// ──────────────────────────────────────────────
+// Firestore 데이터 로드
+// ──────────────────────────────────────────────
+async function loadData() {
+    try {
+        // 특별실 목록
+        const roomsSnap = await getDocs(query(collection(db, 'rooms'), orderBy('createdAt')));
+        rooms = roomsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // 기본 특별실이 없으면 초기 데이터 생성
+        if (rooms.length === 0) {
+            await initDefaultRooms();
+            const snap2 = await getDocs(query(collection(db, 'rooms'), orderBy('createdAt')));
+            rooms = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // 예약 데이터
+        await loadBookings();
+
+    } catch (err) {
+        console.error('데이터 로드 실패:', err);
+        showToast('데이터를 불러오는 데 실패했습니다.', 'error');
+    }
+
+    if (!selectedRoom && rooms.length > 0) selectedRoom = rooms[0];
+    renderRoomTabs();
+    renderView();
+}
+
+async function loadBookings() {
+    const bookingsSnap = await getDocs(collection(db, 'bookings'));
+    bookings = {};
+    bookingsSnap.forEach(d => {
+        const b = d.data();
+        const key = `${b.roomId}_${b.date}`;
+        if (!bookings[key]) bookings[key] = {};
+        bookings[key][b.period] = { id: d.id, userName: b.userName, purpose: b.purpose };
+    });
+}
+
+async function initDefaultRooms() {
+    const defaults = [
+        { name: '컴퓨터1실',       icon: 'monitor', themeColor: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)', themeGlow: 'rgba(0,198,255,0.35)' },
+        { name: '컴퓨터2실',       icon: 'monitor', themeColor: 'linear-gradient(135deg, #11e8b7 0%, #0099f7 100%)', themeGlow: 'rgba(17,232,183,0.3)' },
+        { name: '디지털튜터수업요청', icon: 'award',   themeColor: 'linear-gradient(135deg, #f355da 0%, #7006ff 100%)', themeGlow: 'rgba(243,85,218,0.3)' }
+    ];
+    for (const room of defaults) {
+        await addDoc(collection(db, 'rooms'), { ...room, createdAt: Date.now() });
+    }
+}
+
+// ──────────────────────────────────────────────
+// 실시간 리스너 (Firestore onSnapshot)
+// ──────────────────────────────────────────────
+function setupRealtimeListeners() {
+    // 특별실 변경 감지
+    onSnapshot(collection(db, 'rooms'), snap => {
+        rooms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        rooms.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+        if (selectedRoom) {
+            const matched = rooms.find(r => r.id === selectedRoom.id);
+            selectedRoom = matched || (rooms.length > 0 ? rooms[0] : null);
+        } else if (rooms.length > 0) {
+            selectedRoom = rooms[0];
+        }
+
+        renderRoomTabs();
+        renderView();
+        if (!adminPanel.classList.contains('hidden')) renderAdminRooms();
+    });
+
+    // 예약 변경 감지
+    onSnapshot(collection(db, 'bookings'), snap => {
+        bookings = {};
+        snap.forEach(d => {
+            const b = d.data();
+            const key = `${b.roomId}_${b.date}`;
+            if (!bookings[key]) bookings[key] = {};
+            bookings[key][b.period] = { id: d.id, userName: b.userName, purpose: b.purpose };
+        });
+        renderView();
+    });
+}
+
+// ──────────────────────────────────────────────
+// 이벤트 리스너 등록
+// ──────────────────────────────────────────────
+function setupEventListeners() {
+    btnPrev.addEventListener('click', () => navigateDateRange(-1));
+    btnNext.addEventListener('click', () => navigateDateRange(1));
+    btnToday.addEventListener('click', () => { referenceDate = new Date(); renderView(); });
+
+    toggleWeek.addEventListener('click', () => setViewMode('week'));
+    toggleMonth.addEventListener('click', () => setViewMode('month'));
+
+    adminToggle.addEventListener('click', () => {
+        const pw = prompt('관리자 비밀번호를 입력하세요:');
+        if (pw === ADMIN_PASSWORD) {
+            adminPanel.classList.remove('hidden');
+            document.getElementById('tabs-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.add('hidden');
+            renderAdminRooms();
+            lucide.createIcons();
+        } else if (pw !== null) {
+            showToast('비밀번호가 일치하지 않습니다.', 'error');
+        }
+    });
+
+    closeAdmin.addEventListener('click', () => {
+        adminPanel.classList.add('hidden');
+        document.getElementById('tabs-section').classList.remove('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        renderRoomTabs();
+        renderView();
+    });
+
+    addRoomForm.addEventListener('submit', handleAddRoomSubmit);
+    bookingForm.addEventListener('submit', handleBookingSubmit);
+
+    document.getElementById('close-modal').addEventListener('click', () => bookingModal.classList.add('hidden'));
+    document.getElementById('close-modal-x').addEventListener('click', () => bookingModal.classList.add('hidden'));
+    document.getElementById('close-detail').addEventListener('click', () => detailModal.classList.add('hidden'));
+    document.getElementById('close-detail-x').addEventListener('click', () => detailModal.classList.add('hidden'));
+    cancelBookingBtn.addEventListener('click', handleCancelBooking);
+}
+
+// ──────────────────────────────────────────────
+// 뷰 제어
+// ──────────────────────────────────────────────
+function setViewMode(mode) {
+    viewMode = mode;
+    if (mode === 'week') {
+        toggleWeek.classList.add('active'); toggleMonth.classList.remove('active');
+        weekView.classList.remove('hidden'); monthView.classList.add('hidden');
+    } else {
+        toggleWeek.classList.remove('active'); toggleMonth.classList.add('active');
+        weekView.classList.add('hidden'); monthView.classList.remove('hidden');
+    }
+    renderView();
+}
+
+function navigateDateRange(dir) {
+    if (viewMode === 'week') referenceDate.setDate(referenceDate.getDate() + dir * 7);
+    else referenceDate.setMonth(referenceDate.getMonth() + dir);
+    renderView();
+}
+
+// ──────────────────────────────────────────────
+// 탭 렌더링
+// ──────────────────────────────────────────────
+function renderRoomTabs() {
+    roomTabs.innerHTML = '';
+    rooms.forEach(room => {
+        const btn = document.createElement('button');
+        btn.className = 'room-tab-btn' + (selectedRoom && selectedRoom.id === room.id ? ' active' : '');
+        if (selectedRoom && selectedRoom.id === room.id) {
+            btn.style.setProperty('--active-bg', room.themeColor || 'linear-gradient(135deg,#00c6ff,#0072ff)');
+            btn.style.setProperty('--active-glow', room.themeGlow || 'rgba(0,198,255,0.35)');
+        }
+        btn.innerHTML = `<i data-lucide="${room.icon || 'door-open'}"></i><span>${room.name}</span>`;
+        btn.addEventListener('click', () => { selectedRoom = room; renderRoomTabs(); renderView(); });
+        roomTabs.appendChild(btn);
+    });
+    lucide.createIcons();
+}
+
+// ──────────────────────────────────────────────
+// 뷰 렌더링
+// ──────────────────────────────────────────────
+function renderView() {
+    if (!selectedRoom) return;
+    if (viewMode === 'week') renderWeekView();
+    else renderMonthView();
+}
+
+function getWeekDates(refDate) {
+    const dates = [];
+    const day = refDate.getDay();
+    const distToMon = day === 0 ? -6 : 1 - day;
+    const monday = new Date(refDate);
+    monday.setDate(refDate.getDate() + distToMon);
+    for (let i = 0; i < 5; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        dates.push(d);
+    }
+    return dates;
+}
+
+function renderWeekView() {
+    const weekDates = getWeekDates(referenceDate);
+    const first = weekDates[0], last = weekDates[4];
+    currentRangeDisplay.textContent = `${first.getFullYear()}년 ${first.getMonth()+1}월 ${first.getDate()}일 ~ ${last.getMonth()+1}월 ${last.getDate()}일`;
+
+    const headerThs = document.querySelectorAll('#week-table-header th');
+    weekDates.forEach((date, i) => {
+        const lbl = headerThs[i+1].querySelector('.date-lbl');
+        if (lbl) lbl.textContent = `(${date.getMonth()+1}/${date.getDate()})`;
+    });
+
+    weekTableBody.innerHTML = '';
+    for (let period = 1; period <= 6; period++) {
+        const tr = document.createElement('tr');
+        const periodTd = document.createElement('td');
+        periodTd.className = 'period-col';
+        periodTd.innerHTML = `<span>${period}</span><div class="period-unit">교시</div>`;
+        tr.appendChild(periodTd);
+
+        weekDates.forEach(date => {
+            const dateStr = date.toISOString().split('T')[0];
+            const key = `${selectedRoom.id}_${dateStr}`;
+            const booking = bookings[key]?.[period];
+            const td = document.createElement('td');
+
+            if (booking) {
+                td.className = 'cell-booked';
+                td.innerHTML = `
+                    <div class="cell-content">
+                        <span class="booked-user"><i data-lucide="user"></i>${booking.userName}</span>
+                        <span class="booked-purpose">${booking.purpose}</span>
+                    </div>`;
+                td.addEventListener('click', () => handleBookingClick(dateStr, period, booking));
+            } else {
+                td.className = 'cell-available';
+                td.innerHTML = `
+                    <div class="cell-content">
+                        <i data-lucide="plus" style="width:14px;height:14px;margin-bottom:2px;"></i>
+                        예약 가능
+                    </div>`;
+                td.addEventListener('click', () => handleAvailableClick(dateStr, period));
+            }
+            tr.appendChild(td);
+        });
+        weekTableBody.appendChild(tr);
+    }
+    lucide.createIcons();
+}
+
+function renderMonthView() {
+    const year = referenceDate.getFullYear();
+    const month = referenceDate.getMonth();
+    currentRangeDisplay.textContent = `${year}년 ${month+1}월`;
+    monthCalendarGrid.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const totalDays = new Date(year, month+1, 0).getDate();
+    const prevTotal = new Date(year, month, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    for (let slot = 0; slot < 42; slot++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell';
+
+        let cellDate, dayNum;
+        if (slot < startWeekday) {
+            cell.className += ' other-month';
+            dayNum = prevTotal - (startWeekday - 1) + slot;
+            cellDate = new Date(year, month-1, dayNum);
+        } else if (slot >= startWeekday + totalDays) {
+            cell.className += ' other-month';
+            dayNum = slot - (startWeekday + totalDays) + 1;
+            cellDate = new Date(year, month+1, dayNum);
+        } else {
+            dayNum = slot - startWeekday + 1;
+            cellDate = new Date(year, month, dayNum);
+        }
+
+        const dateStr = cellDate.toISOString().split('T')[0];
+        if (dateStr === todayStr) cell.className += ' today';
+
+        cell.innerHTML = `<span class="day-number">${dayNum}</span>`;
+        const resContainer = document.createElement('div');
+        resContainer.className = 'calendar-reservations';
+
+        const dayBookings = bookings[`${selectedRoom.id}_${dateStr}`] || {};
+        for (let p = 1; p <= 6; p++) {
+            const b = dayBookings[p];
+            if (b) {
+                const badge = document.createElement('div');
+                badge.className = 'cal-booking-badge';
+                badge.textContent = `${p}교시: ${b.userName}`;
+                badge.title = `${p}교시 - ${b.userName} (${b.purpose})`;
+                badge.addEventListener('click', e => { e.stopPropagation(); handleBookingClick(dateStr, p, b); });
+                resContainer.appendChild(badge);
+            }
+        }
+
+        cell.appendChild(resContainer);
+        cell.addEventListener('click', () => { referenceDate = new Date(cellDate); setViewMode('week'); });
+        monthCalendarGrid.appendChild(cell);
+    }
+}
+
+// ──────────────────────────────────────────────
+// 예약 클릭 핸들러
+// ──────────────────────────────────────────────
+function handleAvailableClick(dateStr, period) {
+    activeTargetDate = dateStr;
+    activePeriod = period;
+    document.getElementById('modal-room-name').textContent = selectedRoom.name;
+    document.getElementById('modal-subtitle').textContent = `${dateStr} | ${period}교시`;
+    bookingModal.classList.remove('hidden');
+    document.getElementById('user-name').focus();
+    lucide.createIcons();
+}
+
+function handleBookingClick(dateStr, period, booking) {
+    activeTargetDate = dateStr;
+    activePeriod = period;
+    document.getElementById('detail-room').textContent = selectedRoom.name;
+    document.getElementById('detail-user').textContent = `${booking.userName} 교사`;
+    document.getElementById('detail-purpose').textContent = booking.purpose;
+    document.getElementById('detail-time').textContent = `${dateStr} (${period}교시)`;
+    detailModal.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+// ──────────────────────────────────────────────
+// 예약 신청 (1교시 = 1예약 중복 방지)
+// ──────────────────────────────────────────────
+async function handleBookingSubmit(e) {
+    e.preventDefault();
+    const userName = document.getElementById('user-name').value.trim();
+    const purpose  = document.getElementById('purpose').value.trim();
+    if (!userName || !purpose) return;
+
+    const key = `${selectedRoom.id}_${activeTargetDate}`;
+
+    // ✅ 조건 1: 이미 예약된 교시인지 클라이언트 상태에서 먼저 확인
+    if (bookings[key]?.[activePeriod]) {
+        showToast('이미 예약된 교시입니다. 다른 교시를 선택해 주세요.', 'error');
+        bookingModal.classList.add('hidden');
+        bookingForm.reset();
+        return;
+    }
+
+    try {
+        // ✅ 서버(Firestore)에서 이중 확인 (동시 신청 방지)
+        const q = query(
+            collection(db, 'bookings'),
+            where('roomId', '==', selectedRoom.id),
+            where('date',   '==', activeTargetDate),
+            where('period', '==', activePeriod)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            showToast('방금 다른 선생님이 이미 예약하셨습니다. 다른 교시를 이용해 주세요.', 'error');
+            bookingModal.classList.add('hidden');
+            bookingForm.reset();
+            return;
+        }
+
+        // ✅ 조건 3: 승인 절차 없이 즉시 저장
+        await addDoc(collection(db, 'bookings'), {
+            roomId:    selectedRoom.id,
+            date:      activeTargetDate,
+            period:    activePeriod,
+            userName:  userName,
+            purpose:   purpose,
+            createdAt: Date.now()
+        });
+
+        showToast('예약이 완료되었습니다!', 'success');
+    } catch (err) {
+        console.error('예약 저장 오류:', err);
+        showToast('예약 저장에 실패했습니다. 다시 시도해 주세요.', 'error');
+    }
+
+    bookingModal.classList.add('hidden');
+    bookingForm.reset();
+}
+
+// ──────────────────────────────────────────────
+// 예약 취소
+// ──────────────────────────────────────────────
+async function handleCancelBooking() {
+    if (!confirm('정말로 이 예약을 취소하시겠습니까?')) return;
+
+    const key = `${selectedRoom.id}_${activeTargetDate}`;
+    const target = bookings[key]?.[activePeriod];
+    if (!target) return;
+
+    try {
+        await deleteDoc(doc(db, 'bookings', target.id));
+        showToast('예약이 취소되었습니다.', 'success');
+    } catch (err) {
+        console.error('예약 취소 오류:', err);
+        showToast('예약 취소에 실패했습니다.', 'error');
+    }
+
+    detailModal.classList.add('hidden');
+}
+
+// ──────────────────────────────────────────────
+// 관리자: 특별실 추가 (조건 2)
+// ──────────────────────────────────────────────
+async function handleAddRoomSubmit(e) {
+    e.preventDefault();
+    const name = newRoomNameInput.value.trim();
+    if (!name) return;
+
+    try {
+        await addDoc(collection(db, 'rooms'), {
+            name,
+            icon:       selectedAdminIcon,
+            themeColor: selectedAdminColor.color,
+            themeGlow:  selectedAdminColor.glow,
+            createdAt:  Date.now()
+        });
+        showToast(`[${name}] 특별실이 추가되었습니다.`, 'success');
+        newRoomNameInput.value = '';
+    } catch (err) {
+        console.error('특별실 추가 오류:', err);
+        showToast('특별실 추가에 실패했습니다.', 'error');
+    }
+}
+
+// ──────────────────────────────────────────────
+// 관리자: 특별실 삭제 (조건 2)
+// ──────────────────────────────────────────────
+async function deleteRoom(id) {
+    const room = rooms.find(r => r.id === id);
+    if (!room) return;
+    if (!confirm(`[${room.name}] 특별실을 삭제하시겠습니까?\n해당 특별실의 모든 예약도 함께 삭제됩니다.`)) return;
+
+    try {
+        // 해당 특별실 예약 전체 삭제
+        const q = query(collection(db, 'bookings'), where('roomId', '==', id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) await deleteDoc(doc(db, 'bookings', d.id));
+
+        // 특별실 삭제
+        await deleteDoc(doc(db, 'rooms', id));
+        showToast(`[${room.name}] 특별실이 삭제되었습니다.`, 'success');
+    } catch (err) {
+        console.error('특별실 삭제 오류:', err);
+        showToast('삭제에 실패했습니다.', 'error');
+    }
+}
+
+// ──────────────────────────────────────────────
+// 관리자 패널 렌더링
+// ──────────────────────────────────────────────
+function renderAdminRooms() {
+    adminRoomList.innerHTML = '';
+    rooms.forEach(room => {
+        const li = document.createElement('li');
+        li.className = 'admin-room-item';
+        li.innerHTML = `
+            <span>${room.name}</span>
+            <button class="btn-delete-room" title="특별실 삭제">
+                <i data-lucide="trash-2"></i>
+            </button>`;
+        li.querySelector('button').addEventListener('click', () => deleteRoom(room.id));
+        adminRoomList.appendChild(li);
+    });
+    lucide.createIcons();
+}
+
+function renderAdminFormSelectors() {
+    iconSelector.innerHTML = '';
+    PRESET_ICONS.forEach((icon, idx) => {
+        const item = document.createElement('div');
+        item.className = `selector-icon-item${idx === 0 ? ' active' : ''}`;
+        item.dataset.icon = icon;
+        item.innerHTML = `<i data-lucide="${icon}"></i>`;
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.selector-icon-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            selectedAdminIcon = icon;
+        });
+        iconSelector.appendChild(item);
+    });
+
+    colorSelector.innerHTML = '';
+    PRESET_COLORS.forEach((c, idx) => {
+        const item = document.createElement('div');
+        item.className = `selector-color-item${idx === 0 ? ' active' : ''}`;
+        item.style.setProperty('--color-val', c.color);
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.selector-color-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            selectedAdminColor = c;
+        });
+        colorSelector.appendChild(item);
+    });
+}
+
+// ──────────────────────────────────────────────
+// 토스트 알림
+// ──────────────────────────────────────────────
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type === 'error' ? 'alert-triangle' : type === 'info' ? 'info' : 'check-circle';
+    toast.innerHTML = `<i data-lucide="${icon}"></i><span class="toast-message">${message}</span>`;
+    container.appendChild(toast);
+    lucide.createIcons();
+    setTimeout(() => {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 400);
+    }, 3200);
+}
+
+// ──────────────────────────────────────────────
+// 앱 시작
+// ──────────────────────────────────────────────
+init();
+</script>
 </body>
 </html>
