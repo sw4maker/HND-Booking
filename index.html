@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 특별실 예약 시스템 - Smart Hub</title>
+    <meta name="description" content="초등학교 교사들을 위한 현대적이고 편리한 특별실 실시간 예약 및 관리 시스템">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Outfit & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase JS SDK (Classic CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        // [설정] 실시간 온라인 공유를 사용하려면 Supabase 프로젝트를 생성한 후 아래에 값을 채워주세요.
+        // 값이 비어 있으면 브라우저의 localStorage를 사용하는 로컬 모드로 즉시 작동합니다.
+        window.VITE_SUPABASE_URL = "";
+        window.VITE_SUPABASE_ANON_KEY = "";
+    </script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="glass">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon-wrapper">
+                        <i data-lucide="school" class="logo-icon"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="title-sub">초등학교</span>
+                        <span class="title-main">특별실 예약 시스템</span>
+                    </div>
+                </div>
+                <div class="current-info">
+                    <div class="live-indicator">
+                        <span class="pulse-dot"></span>실시간 동기화 중
+                    </div>
+                    <button id="admin-toggle" class="btn-icon ripple" title="관리자 모드">
+                        <i data-lucide="settings"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Room Tabs Bar (Dynamic Horizontal Navigation) -->
+            <section id="tabs-section">
+                <div id="room-tabs" class="room-tabs">
+                    <!-- Tabs will be injected here via JS -->
+                </div>
+            </section>
+
+            <!-- Dashboard Content Section -->
+            <section id="dashboard-section" class="fade-in">
+                <!-- View Control Bar -->
+                <div class="control-panel glass">
+                    <div class="control-left">
+                        <button id="btn-prev" class="btn-nav" title="이전"><i data-lucide="chevron-left"></i></button>
+                        <button id="btn-today" class="btn-today-text">오늘</button>
+                        <button id="btn-next" class="btn-nav" title="다음"><i data-lucide="chevron-right"></i></button>
+                        <h3 id="current-range-display" class="date-range-title">로딩 중...</h3>
+                    </div>
+                    <div class="control-right">
+                        <div class="view-toggle-group">
+                            <button id="toggle-week" class="btn-toggle active">주별</button>
+                            <button id="toggle-month" class="btn-toggle">월별</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Week View Panel -->
+                <div id="week-view" class="view-panel">
+                    <div class="week-timetable-wrapper glass">
+                        <table class="week-table">
+                            <thead>
+                                <tr id="week-table-header">
+                                    <th>교시</th>
+                                    <th>월 <span class="date-lbl"></span></th>
+                                    <th>화 <span class="date-lbl"></span></th>
+                                    <th>수 <span class="date-lbl"></span></th>
+                                    <th>목 <span class="date-lbl"></span></th>
+                                    <th>금 <span class="date-lbl"></span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="week-table-body">
+                                <!-- 1~6 periods rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Month View Panel -->
+                <div id="month-view" class="view-panel hidden">
+                    <div class="month-calendar-wrapper glass">
+                        <div class="calendar-days-header">
+                            <div>일</div>
+                            <div>월</div>
+                            <div>화</div>
+                            <div>수</div>
+                            <div>목</div>
+                            <div>금</div>
+                            <div>토</div>
+                        </div>
+                        <div id="month-calendar-grid" class="calendar-grid">
+                            <!-- Calendar dates grid cells injected here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Panel Area -->
+            <section id="admin-panel" class="hidden fade-in">
+                <div class="section-header-back">
+                    <button id="close-admin" class="btn-back">
+                        <i data-lucide="arrow-left"></i>
+                        <span>메인 화면으로</span>
+                    </button>
+                    <h2><i data-lucide="shield-check" class="title-icon"></i>특별실 관리자 설정</h2>
+                </div>
+                
+                <div class="admin-grid">
+                    <!-- Add Room Card -->
+                    <div class="admin-card add-card glass">
+                        <h3>특별실 신규 등록</h3>
+                        <form id="add-room-form" class="admin-form">
+                            <div class="form-group">
+                                <label for="new-room-name">특별실 명칭</label>
+                                <input type="text" id="new-room-name" required placeholder="예: 창의미술실, AI코딩실">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>대표 아이콘 선택</label>
+                                <div class="icon-selector" id="icon-selector">
+                                    <!-- Icons injected via JS -->
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>테마 컬러 그라데이션</label>
+                                <div class="color-selector" id="color-selector">
+                                    <!-- Colors injected via JS -->
+                                </div>
+                            </div>
+                            
+                            <button type="submit" id="add-room-btn" class="btn-primary btn-block">
+                                <i data-lucide="plus"></i> 특별실 등록하기
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Room List Card -->
+                    <div class="admin-card list-card glass">
+                        <h3>등록된 특별실 목록</h3>
+                        <div class="admin-list-wrapper">
+                            <ul id="admin-room-list" class="admin-room-list">
+                                <!-- Admin room list for deletion -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Booking Modal -->
+        <div id="booking-modal" class="modal hidden">
+            <div class="modal-content glass active">
+                <div class="modal-header">
+                    <h3><i data-lucide="plus-circle" class="modal-icon text-primary"></i>특별실 예약 신청</h3>
+                    <button type="button" class="btn-close-modal" id="close-modal-x"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="booking-summary">
+                        <div class="summary-item">
+                            <span class="label">예약 실습실</span>
+                            <span class="value" id="modal-room-name">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">날짜 / 교시</span>
+                            <span class="value text-accent" id="modal-subtitle">-</span>
+                        </div>
+                    </div>
+                    <form id="booking-form">
+                        <div class="form-group">
+                            <label for="user-name"><i data-lucide="user"></i>예약자 성함</label>
+                            <input type="text" id="user-name" required placeholder="교사 성함을 입력해 주세요. (예: 홍길동)">
+                        </div>
+                        <div class="form-group">
+                            <label for="purpose"><i data-lucide="message-square"></i>사용 목적 (수업 명)</label>
+                            <input type="text" id="purpose" required placeholder="예: 6학년 1반 실습 수업">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="close-modal" class="btn-secondary">취소</button>
+                            <button type="submit" class="btn-primary">예약 완료</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Modal (for cancellation) -->
+        <div id="detail-modal" class="modal hidden">
+            <div class="modal-content glass active">
+                <div class="modal-header">
+                    <h3><i data-lucide="info" class="modal-icon text-accent"></i>예약 상세 정보</h3>
+                    <button type="button" class="btn-close-modal" id="close-detail-x"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="detail-card">
+                        <div class="detail-row">
+                            <i data-lucide="map-pin"></i>
+                            <div>
+                                <span class="label">예약 장소</span>
+                                <span class="value" id="detail-room">-</span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <i data-lucide="clock"></i>
+                            <div>
+                                <span class="label">사용 시간</span>
+                                <span class="value text-accent" id="detail-time">-</span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <i data-lucide="user"></i>
+                            <div>
+                                <span class="label">예약 교사</span>
+                                <span class="value" id="detail-user">-</span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <i data-lucide="text"></i>
+                            <div>
+                                <span class="label">사용 목적</span>
+                                <span class="value" id="detail-purpose">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="close-detail" class="btn-secondary">닫기</button>
+                        <button type="button" id="cancel-booking-btn" class="btn-danger">
+                            <i data-lucide="trash-2"></i> 예약 취소
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification Container -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- Loaded as standard script with defer to support double-click (file:///) execution -->
+    <script src="app.js" defer></script>
+</body>
+</html>
